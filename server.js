@@ -3,15 +3,23 @@ const { spawn } = require("child_process");
 const fs = require("fs");
 const app = express();
 
-// Create folders
+// ⭐ ENABLE CORS FOR GITHUB PAGES ⭐
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Headers", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  next();
+});
+
+// Create required folders
 if (!fs.existsSync("hls")) fs.mkdirSync("hls");
 if (!fs.existsSync("hls/ss2")) fs.mkdirSync("hls/ss2");
 if (!fs.existsSync("hls/ten3")) fs.mkdirSync("hls/ten3");
 
 // CHANNEL LIST
 const CHANNELS = {
-  ss2: "http://87.255.35.150:18828",      // Star Sports 2
-  ten3: "http://87.255.35.150:18848"      // Sony TEN 3 - HINDI
+  ss2: "http://87.255.35.150:18828",    // Star Sports 2
+  ten3: "http://87.255.35.150:18848"    // Sony TEN 3 - HINDI
 };
 
 function startFFmpeg(name, url) {
@@ -35,9 +43,10 @@ function startFFmpeg(name, url) {
 // Start all channels
 Object.entries(CHANNELS).forEach(([name, url]) => startFFmpeg(name, url));
 
-// Serve HLS
+// Serve HLS files
 app.use("/hls", express.static("hls"));
 
+// Root page
 app.get("/", (req, res) => {
   res.send(`
     <h1>Channels Running</h1>
