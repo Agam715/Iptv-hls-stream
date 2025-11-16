@@ -6,34 +6,44 @@ const app = express();
 // Create folders
 if (!fs.existsSync("hls")) fs.mkdirSync("hls");
 if (!fs.existsSync("hls/ss2")) fs.mkdirSync("hls/ss2");
+if (!fs.existsSync("hls/ten3")) fs.mkdirSync("hls/ten3");
 
-// CHANNEL source
-const STREAM = "http://87.255.35.150:18828";  // Star Sports 2 TS stream
+// CHANNEL LIST
+const CHANNELS = {
+  ss2: "http://87.255.35.150:18828",      // Star Sports 2
+  ten3: "http://87.255.35.150:18848"      // Sony TEN 3 - HINDI
+};
 
-// Start FFmpeg
-console.log("Starting Star Sports 2...");
-const ffmpeg = spawn("ffmpeg", [
-  "-i", STREAM,
-  "-c:v", "copy",
-  "-c:a", "copy",
-  "-f", "hls",
-  "-hls_time", "2",
-  "-hls_list_size", "10",
-  "-hls_flags", "delete_segments",
-  "hls/ss2/playlist.m3u8"
-]);
+function startFFmpeg(name, url) {
+  console.log("Starting channel:", name);
 
-ffmpeg.stderr.on("data", d => console.log("[ss2]", d.toString()));
-ffmpeg.on("close", () => console.log("Channel stopped"));
+  const ffmpeg = spawn("ffmpeg", [
+    "-i", url,
+    "-c:v", "copy",
+    "-c:a", "copy",
+    "-f", "hls",
+    "-hls_time", "2",
+    "-hls_list_size", "10",
+    "-hls_flags", "delete_segments",
+    `hls/${name}/playlist.m3u8`
+  ]);
+
+  ffmpeg.stderr.on("data", d => console.log(`[${name}]`, d.toString()));
+  ffmpeg.on("close", () => console.log(`Channel stopped: ${name}`));
+}
+
+// Start all channels
+Object.entries(CHANNELS).forEach(([name, url]) => startFFmpeg(name, url));
 
 // Serve HLS
 app.use("/hls", express.static("hls"));
 
 app.get("/", (req, res) => {
   res.send(`
-    <h1>Channel Running</h1>
+    <h1>Channels Running</h1>
     <ul>
       <li><a href="/hls/ss2/playlist.m3u8">Star Sports 2</a></li>
+      <li><a href="/hls/ten3/playlist.m3u8">Sony TEN 3 - HINDI</a></li>
     </ul>
   `);
 });
