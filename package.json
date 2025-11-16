@@ -1,8 +1,13 @@
 {
   "name": "iptv-hls-restream",
   "version": "1.0.0",
+  "description": "HLS restream using ffmpeg",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^2.6.7"
   }
 }
