@@ -11,21 +11,24 @@ app.use((req, res, next) => {
   next();
 });
 
-// Create required folders
+// Make HLS folders
 if (!fs.existsSync("hls")) fs.mkdirSync("hls");
-if (!fs.existsSync("hls/ss2")) fs.mkdirSync("hls/ss2");
-if (!fs.existsSync("hls/ten3")) fs.mkdirSync("hls/ten3");
+["ss2", "ten3", "ss1_4k"].forEach(dir => {
+  if (!fs.existsSync(`hls/${dir}`)) fs.mkdirSync(`hls/${dir}`);
+});
 
-// CHANNEL LIST
+// CHANNEL LIST (YOUR STREAMS)
 const CHANNELS = {
-  ss2: "http://87.255.35.150:18828",    // Star Sports 2
-  ten3: "http://87.255.35.150:18848"    // Sony TEN 3 - HINDI
+  ss2:    "http://87.255.35.150:18828", // Star Sports 2
+  ten3:   "http://87.255.35.150:18848", // Sony TEN 3 Hindi
+  ss1_4k: "http://sports-rkdyiptv.wasmer.app/play.php?id=71242" // STAR SPORTS 1 4K HINDI
 };
 
-function startFFmpeg(name, url) {
-  console.log("Starting channel:", name);
+// Start FFmpeg for each channel
+function startFF(name, url) {
+  console.log("Starting:", name);
 
-  const ffmpeg = spawn("ffmpeg", [
+  const ff = spawn("ffmpeg", [
     "-i", url,
     "-c:v", "copy",
     "-c:a", "copy",
@@ -36,25 +39,26 @@ function startFFmpeg(name, url) {
     `hls/${name}/playlist.m3u8`
   ]);
 
-  ffmpeg.stderr.on("data", d => console.log(`[${name}]`, d.toString()));
-  ffmpeg.on("close", () => console.log(`Channel stopped: ${name}`));
+  ff.stderr.on("data", d => console.log(`[${name}]`, d.toString()));
+  ff.on("close", () => console.log(`Stopped: ${name}`));
 }
 
-// Start all channels
-Object.entries(CHANNELS).forEach(([name, url]) => startFFmpeg(name, url));
+Object.entries(CHANNELS).forEach(([name, url]) => startFF(name, url));
 
-// Serve HLS files
+// Serve HLS
 app.use("/hls", express.static("hls"));
 
-// Root page
 app.get("/", (req, res) => {
   res.send(`
-    <h1>Channels Running</h1>
+    <h1>Live Channels Running</h1>
     <ul>
       <li><a href="/hls/ss2/playlist.m3u8">Star Sports 2</a></li>
-      <li><a href="/hls/ten3/playlist.m3u8">Sony TEN 3 - HINDI</a></li>
+      <li><a href="/hls/ten3/playlist.m3u8">Sony TEN 3 - Hindi</a></li>
+      <li><a href="/hls/ss1_4k/playlist.m3u8">Star Sports 1 4K - Hindi</a></li>
     </ul>
   `);
 });
 
-app.listen(3000, () => console.log("Server running on port 3000"));
+app.listen(3000, () =>
+  console.log("HLS Server running on port 3000")
+);
