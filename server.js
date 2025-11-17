@@ -11,67 +11,53 @@ app.use((req, res, next) => {
   next();
 });
 
-// Ensure HLS folder exists
+// Create folders
 if (!fs.existsSync("hls")) fs.mkdirSync("hls");
+if (!fs.existsSync("hls/ss2")) fs.mkdirSync("hls/ss2");
+if (!fs.existsSync("hls/ten3")) fs.mkdirSync("hls/ten3");
+if (!fs.existsSync("hls/ss1_4k")) fs.mkdirSync("hls/ss1_4k"); // ⭐ NEW
 
-// CHANNELS
+// CHANNEL LIST (your working links)
 const CHANNELS = {
-  ss2: {
-    url: "http://87.255.35.150:18828",
-    folder: "hls/ss2"
-  },
-  ten3: {
-    url: "http://87.255.35.150:18848",
-    folder: "hls/ten3"
-  },
-  ss1_4k: {
-    url: "http://sports-rkdyiptv.wasmer.app/play.php?id=71242",
-    folder: "hls/ss1_4k"
-  }
+  ss2: "http://87.255.35.150:18828",
+  ten3: "http://87.255.35.150:18848",
+  ss1_4k: "http://sports-rkdyiptv.wasmer.app/play.php?id=71242" // ⭐ NEW CHANNEL
 };
 
-// Create folder if not exist
-function ensureFolder(path) {
-  if (!fs.existsSync(path)) {
-    fs.mkdirSync(path, { recursive: true });
-    console.log("Created folder:", path);
-  }
-}
-
-function startChannel(key, data) {
-  ensureFolder(data.folder);
-
-  console.log("Starting channel:", key);
+// FUNCTION TO START FFmpeg
+function startFFmpeg(name, url) {
+  console.log("Starting channel:", name);
 
   const ffmpeg = spawn("ffmpeg", [
-    "-i", data.url,
+    "-user_agent", "Mozilla/5.0",    // ⭐ FIX: act like browser
+    "-headers", "Referer: https://example.com\r\n",
+    "-i", url,
     "-c:v", "copy",
     "-c:a", "copy",
     "-f", "hls",
     "-hls_time", "2",
     "-hls_list_size", "10",
     "-hls_flags", "delete_segments",
-    `${data.folder}/playlist.m3u8`
+    `hls/${name}/playlist.m3u8`
   ]);
 
-  ffmpeg.stderr.on("data", d => console.log(`[${key}]`, d.toString()));
-  ffmpeg.on("close", () => console.log(`Channel stopped: ${key}`));
+  ffmpeg.stderr.on("data", d => console.log(`[${name}]`, d.toString()));
+  ffmpeg.on("close", () => console.log(`Channel stopped: ${name}`));
 }
 
-// Start all channels
-Object.entries(CHANNELS).forEach(([key, data]) => startChannel(key, data));
+// START ALL CHANNELS
+Object.entries(CHANNELS).forEach(([name, url]) => startFFmpeg(name, url));
 
 // Serve HLS
 app.use("/hls", express.static("hls"));
 
-// Status page
 app.get("/", (req, res) => {
   res.send(`
     <h1>Channels Running</h1>
     <ul>
       <li><a href="/hls/ss2/playlist.m3u8">Star Sports 2</a></li>
-      <li><a href="/hls/ten3/playlist.m3u8">Sony TEN 3 Hindi</a></li>
-      <li><a href="/hls/ss1_4k/playlist.m3u8">Star Sports 1 4K Hindi</a></li>
+      <li><a href="/hls/ten3/playlist.m3u8">Sony TEN 3 - HINDI</a></li>
+      <li><a href="/hls/ss1_4k/playlist.m3u8">STAR SPORTS 1 4K HINDI</a></li>
     </ul>
   `);
 });
